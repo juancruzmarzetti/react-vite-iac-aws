@@ -1,0 +1,5 @@
+services:
+  react:
+    image: juancruzmarzetti/sky-shop:front
+    ports:
+      - 80:80

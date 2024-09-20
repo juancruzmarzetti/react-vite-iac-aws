@@ -17,7 +17,7 @@ const AñadirProd = () => {
     const {loggedUser, token, prods, getProds} = useContext(BotonContext);
     const [isMobile, setIsMobile] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
-    const url = "http://localhost:8080/api/items/create"
+    const url = "/api/items/create"
 
     const isNameRepeated = (product) => {
       return prods.some(product => product.name.toLowerCase().trim() === productName.toLocaleLowerCase().trim());
@@ -157,22 +157,29 @@ const handleButtonClick = (option) => {
 
   // subida de imagen a Cloudinary
   // (implementacion cuando se pueda agregar productos al back-end)
-  const uploadImageToCloudinary  = async (files) => {
-    const urls = [];
-    for(const file of files){
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'x1kdwphk');
-      try{
-        const response = await axios.post('https://api.cloudinary.com/v1_1/dqeczcnjq/image/upload', formData);
-        urls.push(response.data.secure_url);
-      }catch(err){
-        console.error("Error uploading image:", err);
-        urls.push(null);
-      }
+  const uploadImagesToS3 = async (files) => {
+    const presignedUrlResponse = await axios.get(`/api/generate-presigned-urls?count=${files.length}`);
+    const presignedUrls = presignedUrlResponse.data;
+  
+    const uploadPromises = presignedUrls.map((url, index) => {
+      const file = files[index];
+      return axios.put(url, file, {
+        headers: {
+          'Content-Type': file.type,
+        },
+      });
+    });
+  
+    try {
+      await Promise.all(uploadPromises);
+      return presignedUrls.map((url) => url.split('?')[0]); // Retorna las URLs de las imágenes sin los parámetros
+    } catch (error) {
+      console.error("Error uploading images to S3:", error);
+      return null;
     }
     return urls;
   };
+
 
   const handleCharacteristics = (e) => {
       const value = e.target.value;
@@ -192,7 +199,7 @@ const handleButtonClick = (option) => {
           let urls = [];
           // se ejecuta subida de img a Cloudinary si no hay errores y si hay imagenes seleccionadas
           if(imgFiles.length > 0){
-            urls = await uploadImageToCloudinary(imgFiles);
+            urls = await uploadImagesToS3(imgFiles);
             if (urls) {
               setImagesCloudUrls(urls);
             } else {

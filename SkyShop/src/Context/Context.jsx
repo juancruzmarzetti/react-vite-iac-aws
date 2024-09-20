@@ -21,8 +21,8 @@ export const BotonProvider = ({ children }) => {
     const [prods, setProds] = useState([]);
     const [allOrders, setAllOrders] = useState([]);
     // const [favoritos, setFavoritos] = useState(favsInStorage);
-    const url = "http://localhost:8080/api"; // endpoint general de api back end
-    const token = "8443f471-f78c-4895-98e6-8fd2edafebb1"; // token que hay que actualizar cada vez que se levanta el back end
+    const url = "/api"; // endpoint general de api back end
+    const token = "7d6b3754-1cbb-4b42-b92d-00ead3525911"; // token que hay que actualizar cada vez que se levanta el back end
     const navigate = useNavigate();
     const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date(fechaSeleccionadaFromStorage)); // Nueva fecha seleccionada
     const [horaSeleccionada, setHoraSeleccionada] = useState(horaSeleccionadaFromStorage);
@@ -205,7 +205,7 @@ export const BotonProvider = ({ children }) => {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/users', {
+            const response = await fetch('/api/users', {
                 method: 'GET',
                 headers: {
                   'Content-Type': 'application/json',

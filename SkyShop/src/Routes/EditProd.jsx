@@ -21,8 +21,8 @@ const EditProd = () => {
     const {loggedUser, token, updateProd} = useContext(BotonContext);
     const [isMobile, setIsMobile] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
-    const urlGet = "http://localhost:8080/api/items/" + id;
-    const url = "http://localhost:8080/api/items";
+    const urlGet = "/api/items/" + id;
+    const url = "/api/items";
 
     const getProdById = async () => {
       const settings = {
@@ -178,22 +178,29 @@ useEffect(() => {
 
   // subida de imagen a Cloudinary
   // (implementacion cuando se pueda agregar productos al back-end)
-  const uploadImageToCloudinary  = async (files) => {
-    const urls = [];
-    for(const file of files){
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'x1kdwphk');
-      try{
-        const response = await axios.post('https://api.cloudinary.com/v1_1/dqeczcnjq/image/upload', formData);
-        urls.push(response.data.secure_url);
-      }catch(error){
-        console.error("Error uploading image:", error);
-        urls.push(null);
-      }
+  const uploadImagesToS3 = async (files) => {
+    try {
+        const presignedUrlResponse = await axios.get(`/api/generate-presigned-urls?count=${files.length}`);
+        const presignedUrls = presignedUrlResponse.data;
+
+        const uploadPromises = presignedUrls.map((url, index) => {
+            const file = files[index];
+            return axios.put(url, file, {
+                headers: {
+                    'Content-Type': file.type,
+                },
+            });
+        });
+        
+        await Promise.all(uploadPromises);
+        return presignedUrls.map((url) => url.split('?')[0]);
+    } catch (error) {
+        console.error("Error uploading images to S3:", error);
+        return null;
     }
     return urls;
   };
+
 
   useEffect(() => {
     getProdById();
@@ -229,7 +236,7 @@ useEffect(() => {
     let urls = [];
     // se ejecuta subida de img a Cloudinary si no hay errores y si hay imagenes seleccionadas
     if(imgFiles.length > 0){
-      urls = await uploadImageToCloudinary(imgFiles);
+      urls = await uploadImagesToS3(imgFiles);
       if (urls) {
         setImagesCloudUrls(prevUrls => [...prevUrls, ...urls]);
       } else {

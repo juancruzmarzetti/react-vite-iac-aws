@@ -1,0 +1,13 @@
+---
+
+
+- hosts: ec2
+  tasks:
+    - name: copy compose file
+      ansible.builtin.copy:
+        src: docker-compose.yaml
+        dest: /home/ec2-user/compose-files/docker-compose.yaml
+    - name: run docker compose
+      ansible.builtin.shell: docker-compose up -d
+      args:
+        chdir: /home/ec2-user/compose-files
